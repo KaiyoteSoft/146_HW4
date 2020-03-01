@@ -1,0 +1,286 @@
+---
+title: "Homework4_W20_Template"
+author: "Your Name Here"
+date: "February 17, 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### Introduction  
+
+Your final homework of the quarter! This homework will help you to
+
+* Correlations:
+
+    * Visualize the relationship between two continuous variables
+    * Write hypotheses for correlations
+    * Implement parametric and nonparametric tests of correlation
+
+* Linear regression/ANCOVA
+
+    * Visualize the relationship between continuous variables AND a factor
+    * Implement regression models with multiple parameters
+    * Create confidence and prediction intervals
+    * Interpret results
+  
+### Exercise 1: Dandelion Correlations (33 pts)
+  
+We are going to look at the plant dataset to answer following question:  
+  
+*Does the number of leaves in a dandelion rosette (num_leaves_in_rosette) correlate with the diameter of the rosette (dand_rosette_diam_cm)?* 
+
+#### a. (2pts) Read in the plant_data.csv dataset and print the first 6 lines
+
+```{r}
+
+
+
+```
+
+#### b. (4pts) State your null and alternative hypotheses for the correlation test
+
+
+[YOUR ANSWER HERE]
+
+
+#### c. (5pts) Create a scatterplot of num_leaves_in_rosette and dand_rosette_diam_cm. Do you think your assumption of linearity and bivariate normality are met based on the figure alone?
+
+```{r}
+
+
+
+
+```
+
+[YOUR ANSWER HERE]
+
+
+#### d. (2pts) If your assumptions of bivariate normality are not met, conduct a transformation of one or more of the variables appropriately.
+
+Hint: If you choose to conduct a log-transformation and there are zeroes in the data, you can run log(variable + 1).
+
+```{r}
+
+
+
+
+```
+
+#### (3pts) e. Remove rows with missing values, then find $\rho$ for the *normal* data using the cor() function.
+
+```{r}
+
+
+
+
+```
+
+#### (3pts) f. Find your t-statistic using rho and the formula from lecture.
+
+```{r}
+
+tstat=NULL
+
+
+```
+My test statistic is `r tstat`.
+
+#### g. (2pts) Find the critical t value for the correlation test using the qt() function.
+
+```{r}
+
+tstar=NULL
+
+
+```
+
+My tstar is `tstar`.
+
+#### h. (2pts) Do you reject or fail to reject the null hypothesis based on the comparison of your tstat to tstar?
+
+
+
+#### i. (2pts) Find the p-value using the pt() function. 
+
+```{r}
+
+pval=NULL
+
+```
+My pvalue is `r pval`.
+
+
+#### e. (3pts) Run a Pearson's correlation test on the *normal* data. Does this match your result from above?
+
+
+```{r}
+
+
+
+```
+
+[YOUR ANSWER HERE]
+
+#### f. (5pts) Run a Spearman's rank correlation test on the *untransformed* data and compare it to a Pearson's correlation on the *untransformed* data. Which test has more power when data are non-normal?
+
+```{r}
+
+
+
+```
+
+[YOUR ANSWER HERE]
+
+
+
+
+
+### Exercise 2: Neanderthal Brains 66 pts
+Estimates of cranial capacity from fossils indicate that Neanderthals had large brains (lnbrain), but also had large body size (lnmass). Using the dataset neanderthala in abd package, we want to determine whether humans ("recent"" in the dataset) and Neanderthals ("neanderthal"" in the dataset) have different brain sizes once their differences in body size are taken into account. To answer this question perform the following ANCOVA:
+
+#### a. (2pts) Load the data and print the first 6 rows
+
+```{r}
+
+
+
+```
+
+#### b. (5pts) Make a scatterplot of data and add different colored lines and points for humans (recent) and neanderthals (neanderthal).
+
+```{r}
+
+
+
+
+```
+
+
+#### c. (5pts) Write down the ANCOVA model that you are running in the form (with your variables of interest included):
+Response Variable = Factor 1 + Covariate + Factor 1 * Covariate
+
+[YOUR ANSWER HERE]
+
+
+#### d. (3pts) If the interaction term Factor 1 * Covariate is not significant, would we expect the lines in the above scatterplot to be parallel or not parallel?
+
+[YOUR ANSWER HERE]
+
+#### e. (3pts) Run the ANCOVA model that corresponds to the equation you wrote above.
+
+```{r}
+
+
+```
+
+
+#### f. (5pts) Look at the diagnostic plots for the fitted model. Do you think your assumptions of normality and homogeneity of variance are met?
+
+```{r}
+
+
+
+```
+
+[YOUR ANSWER HERE]
+
+#### g. (5pts) Look at the ANOVA table for this model using Anova from the car package, NOT anova. Is there a significant interaction between species and lnmass? Which term in the output allowed you to make this conclusion?
+
+```{r}
+
+
+
+
+```
+
+[YOUR ANSWER HERE]
+
+
+
+#### h. (6pts) If the interaction is not significant, refit the ANCOVA without the interaction term and run Anova on your new model. Interpret the meaning of each term in the model.
+
+```{r}
+
+
+```
+
+[YOUR ANSWER HERE]
+
+#### i. (4pts) Is there a significant difference in brain size between humans and Neanderthals after accounting for body mass? Which species has significantly bigger brains after accounting for body mass? 
+
+
+[YOUR ANSWER HERE]
+
+
+#### j. (5pts) You want to determine the mean brain size for both Neanderthals and humans when body mass is 50kg. Using the predict() function, report the 95% confidence interval for the log of brain mass for each species.
+
+```{r}
+# Hint: to quickly find the 95% confidence interval at a given x-value, you can make use of the newdata argument in the predict() function. You can do so like this:
+
+# predict(YOUR_MODEL, 
+#        newdata = data.frame(lnmass = MASS_DATA_YOU_WANT_TO_USE_TO_PREDICT, species=c("recent", "neanderthal")),
+#        interval = CHOOSE_PREDICTION_OR_CONFIDENCE, level=PICK_A_LEVEL)
+
+
+
+
+```
+
+
+#### k. (5pts) A friend of yours just got back from an archaeological dig in Europe and has uncovered a hominid skeleton with an estimated ln body mass of 4.33 and an estimated ln brain size of 7.5. She needs your statistical skills to help determine whether she has found a Neanderthal skeleton, a human skeleton, or if it is too close to call.
+
+Using the model you fit above, predict the expected ln brain size for humans and Neanderthals with an ln body mass of 4.33 as well as the uncertainty around these predictions using the predict() function.
+
+```{r}
+# Hint: to conduct predictions on NEW data, you will need to add something to the newdata argument in the predict() function. You can do so like this:
+
+#predict(YOUR_MODEL, 
+#        newdata = data.frame(lnmass = MASS_DATA_YOU_WANT_TO_USE_TO_PREDICT , species=c("recent", "neanderthal")),
+#        interval = CHOOSE_PREDICTION_OR_CONFIDENCE, level=PICK_A_LEVEL)
+
+
+
+```
+
+#### l. (5pts) Based on these predictions from your model, do you think your friend found a human skeleton, a Neanderthal skeleton, or is it too close to call? Briefly explain your answer.
+
+
+
+
+
+
+#### m. (5pts) Explain the difference between the use of interval="confidence" and interval="prediction". 
+
+
+
+
+
+#### n. (8pts) Visualize the confidence and prediction bands by saving the output of the predict() function:
+
+```{r}
+# Uncomment the following code and fill in with your model name:
+
+  # preds_ci = as.data.frame(predict(YOUR_MODEL_HERE, interval="confidence"))
+  # names(preds_ci)=c("fit_ci","lwr_ci","upr_ci")
+  # 
+  # preds_pr = as.data.frame(predict(YOUR_MODEL_HERE, interval="prediction"))
+  # names(preds_pr)=c("fit_pr","lwr_pr","upr_pr")
+  # 
+  # NeanderthalBrains2 = cbind(NeanderthalBrains,preds_ci,preds_pr)
+
+
+# Now plot: Hint: Use geom_ribbon to create ribbons for the confidence and prediction intervals.
+
+
+
+```
+
+
+
+
+
+
+
+

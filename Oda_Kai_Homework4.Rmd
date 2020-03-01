@@ -1,0 +1,365 @@
+---
+title: "Homework4"
+author: "Kai Oda"
+date: "February 28, 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set("~/Biology/146/Homework_4")
+
+library(ggplot2)
+library(tidyverse)
+library(abd)
+library(car)
+```
+### Introduction  
+
+Your final homework of the quarter! This homework will help you to
+
+* Correlations:
+
+    * Visualize the relationship between two continuous variables
+    * Write hypotheses for correlations
+    * Implement parametric and nonparametric tests of correlation
+
+* Linear regression/ANCOVA
+
+    * Visualize the relationship between continuous variables AND a factor
+    * Implement regression models with multiple parameters
+    * Create confidence and prediction intervals
+    * Interpret results
+  
+### Exercise 1: Dandelion Correlations (33 pts)
+  
+We are going to look at the plant dataset to answer following question:  
+  
+*Does the number of leaves in a dandelion rosette (num_leaves_in_rosette) correlate with the diameter of the rosette (dand_rosette_diam_cm)?* 
+
+#### a. (2pts) Read in the plant_data.csv dataset and print the first 6 lines
+
+```{r}
+plant <- read.csv("plant_data.csv")
+str(plant)
+head(plant)
+
+```
+
+#### b. (4pts) State your null and alternative hypotheses for the correlation test
+**Null:** Rho = 0, "r" is normally distributed with a mean equal to zero: The number of leaves in a dandelion rosette does not correlate with the diameter of the dandelion. <br />
+**Alt:** Rho not equal to zero: The number of leaves in a dandelion rosette correlates with the diameter of the dandelion. 
+
+
+#### c. (5pts) Create a scatterplot of num_leaves_in_rosette and dand_rosette_diam_cm. Do you think your assumption of linearity and bivariate normality are met based on the figure alone?
+
+```{r}
+
+ggplot(plant, aes(x=num_leaves_in_rosette, y=dand_rosette_diam_cm))+
+  geom_point()+
+  geom_smooth(method="lm")
+
+
+```
+
+The data **does** appear to be generally linear, with the rosette diameter increasing as the number of leaves increase. There does not appear to be a higher order relationship. <br /> 
+The data **does not** appear to be bivariately normally distributed — the values appear to be "clustered" at lower x values (closer to zero). A log transformation should help the data to meet bivariate normality assumption. 
+
+
+#### d. (2pts) If your assumptions of bivariate normality are not met, conduct a transformation of one or more of the variables appropriately.
+
+Hint: If you choose to conduct a log-transformation and there are zeroes in the data, you can run log(variable + 1).
+
+```{r}
+
+plant$log_num_leaves <- log(plant$num_leaves_in_rosette+1)
+
+ggplot(plant, aes(x=log_num_leaves, y=dand_rosette_diam_cm))+
+  geom_point()+
+  geom_smooth(method="lm")
+
+```
+
+#### (3pts) e. Remove rows with missing values, then find $\rho$ for the *normal* data using the cor() function.
+
+```{r}
+
+str(plant_filter)
+plant_filter <- plant[which(plant$dand_rosette_diam_cm>-1), ]
+plant_filter2 <- na.omit(plant, cols=dand_rosette_diam_cm)
+
+?na.omit
+
+cor(plant_filter$log_num_leaves, plant_filter$dand_rosette_diam_cm)
+
+
+```
+The $\rho$ value for log(number of leaves in rosette) vs. the diameter of the rosette is 0.278
+
+#### (3pts) f. Find your t-statistic using rho and the formula from lecture.
+
+```{r}
+
+r_dand <- cor(plant_filter$log_num_leaves, plant_filter$dand_rosette_diam_cm)
+n <- length(plant_filter$dand_rosette_diam_cm)
+
+SE_r <- sqrt((1 - r_dand^2) / (n-2))
+tstat= r_dand / SE_r
+
+
+```
+My test statistic is `r tstat`.
+
+#### g. (2pts) Find the critical t value for the correlation test using the qt() function.
+
+```{r}
+
+tstar = qt(1 - 0.025, n - 2)
+
+
+```
+
+My tstar is `tstar`.
+
+#### h. (2pts) Do you reject or fail to reject the null hypothesis based on the comparison of your tstat to tstar?
+Because tstat=4.25 > tsar=1.97, we **reject the null hypothesis.** Therefore, the number of leaves in the rosette is correlated to the diameter of the dandelion rosette. 
+
+
+#### i. (2pts) Find the p-value using the pt() function. 
+
+```{r}
+
+pval= (1 - pt(tstat, n-2))*2
+
+```
+My pvalue is `r pval`.
+
+
+#### e. (3pts) Run a Pearson's correlation test on the *normal* data. Does this match your result from above?
+
+
+```{r}
+
+pearson <- cor.test(plant_filter$log_num_leaves, plant_filter$dand_rosette_diam_cm, method="pearson")
+pearson
+
+```
+
+My Pearson's test **does** match the result from above!
+
+#### f. (5pts) Run a Spearman's rank correlation test on the *untransformed* data and compare it to a Pearson's correlation on the *untransformed* data. Which test has more power when data are non-normal?
+
+```{r}
+
+spearman <- cor.test(plant$num_dand_flowers, plant$dand_rosette_diam_cm, method="spearman")
+pearson_non_normal <- cor.test(plant$num_dand_flowers, plant$dand_rosette_diam_cm, method="pearson")
+
+spearman
+pearson_non_normal
+
+```
+
+Spearman p value = 0.8268 <br /> 
+Pearson non-normal - value = 0.05961 <br /> 
+Based on the p values it would appear that the Pearson's test has more power even when the data is non-normal. 
+
+
+
+
+
+
+
+### Exercise 2: Neanderthal Brains 66 pts
+Estimates of cranial capacity from fossils indicate that Neanderthals had large brains (lnbrain), but also had large body size (lnmass). Using the dataset neanderthala in abd package, we want to determine whether humans ("recent"" in the dataset) and Neanderthals ("neanderthal"" in the dataset) have different brain sizes once their differences in body size are taken into account. To answer this question perform the following ANCOVA:
+
+#### a. (2pts) Load the data and print the first 6 rows
+
+```{r}
+brain_data <- NeanderthalBrains
+str(brain_data)
+head(brain_data)
+
+```
+
+#### b. (5pts) Make a scatterplot of data and add different colored lines and points for humans (recent) and neanderthals (neanderthal).
+
+```{r}
+ggplot(brain_data, aes(x=ln.mass, y=ln.brain, fill=species))+
+  geom_point(aes(fill=species))+
+  geom_smooth(method="lm")+
+  labs(x="Log of body mass(kg)", y="Log of brain size")
+
+# plot(ln.mass ~ ln.brain, 
+#       data = brain_data,
+#       col = species, 
+#       pch = 19)
+# 
+# legend(3.85, 5, legend = c("Human", "Neanderthal"),
+#        col = c("red", "black"), 
+#        lty=1:1, cex=0.8)
+# 
+# fit_human <- lm(ln.mass[species=="recent"] ~ ln.brain[species=="recent"], data = brain_data)
+# 
+# fit_neanderthal <- lm(ln.mass[species=="neanderthal"] ~ ln.brain[species=="neanderthal"], data = brain_data)
+# 
+# abline(fit_human, col = "red")
+# abline(fit_neanderthal, col = "black")
+
+
+```
+
+
+#### c. (5pts) Write down the ANCOVA model that you are running in the form (with your variables of interest included):
+Response Variable = Factor 1 + Covariate + Factor 1 * Covariate
+
+ln.brain = species + ln.mass + ln.mass + species*ln.mass
+
+
+#### d. (3pts) If the interaction term Factor 1 * Covariate is not significant, would we expect the lines in the above scatterplot to be parallel or not parallel?
+
+We would expect the lines to **be parallel** if the interaction term is **not significant.** 
+
+#### e. (3pts) Run the ANCOVA model that corresponds to the equation you wrote above.
+
+```{r}
+brain_model <- lm(ln.brain~species + ln.mass + species*ln.mass, data=brain_data)
+anova(brain_model)
+
+```
+
+
+#### f. (5pts) Look at the diagnostic plots for the fitted model. Do you think your assumptions of normality and homogeneity of variance are met?
+
+```{r}
+
+plot(brain_model)
+
+```
+
+The data appears to be relatively normal, there are some values at the lower end of the qqplot that are not on the line but the rest of the values track well. <br /> 
+Homogeneity of variances appears to be met as well. The points are scattered relatively evenly and there does not seem to be an increased spread in the variance at any given area. 
+
+#### g. (5pts) Look at the ANOVA table for this model using Anova from the car package, NOT anova. Is there a significant interaction between species and lnmass? Which term in the output allowed you to make this conclusion?
+
+```{r}
+
+Anova(brain_model, type="II")
+
+
+```
+
+There **does not** appear to be a significant interaction between species and lnmass because the p value is greater than 0.05 for the output "speces:ln.mass." Therefore, we should be able to refit the model without the interaction term. 
+
+
+
+#### h. (6pts) If the interaction is not significant, refit the ANCOVA without the interaction term and run Anova on your new model. Interpret the meaning of each term in the model.
+
+```{r}
+brain_model2 <- lm(ln.brain~species + ln.mass, data=brain_data)
+
+plot(brain_model2)
+Anova(brain_model2, type="II")
+
+summary(brain_model2)
+```
+
+Species: Since the p value is less than 0.05 the mean log brain mass will be different for at least one species. But since there are only two species we can say that the log brain mass is significantly different between humans and neanderthals. <br /> 
+ln.mass: The log body mass has a significant effect on the log brain mass because the p value is less than 0.05. <br /> 
+
+
+#### i. (4pts) Is there a significant difference in brain size between humans and Neanderthals after accounting for body mass? Which species has significantly bigger brains after accounting for body mass? 
+
+Since there is a significant difference in brain mass between species after we accounted for body mass we reject the null hypothesis that there is no significant difference beween the mean log brain mass between humans and neanderthals. <br />
+
+Neanderthals have significantly bigger brains that humans after accounting for body mass. 
+
+
+#### j. (5pts) You want to determine the mean brain size for both Neanderthals and humans when body mass is 50kg. Using the predict() function, report the 95% confidence interval for the log of brain mass for each species.
+
+```{r}
+# Hint: to quickly find the 95% confidence interval at a given x-value, you can make use of the newdata argument in the predict() function. You can do so like this:
+
+# predict(YOUR_MODEL, 
+#        newdata = data.frame(lnmass = MASS_DATA_YOU_WANT_TO_USE_TO_PREDICT, species=c("recent", "neanderthal")),
+#        interval = CHOOSE_PREDICTION_OR_CONFIDENCE, level=PICK_A_LEVEL)
+
+predict(brain_model2,
+       newdata = data.frame(ln.mass = log(50), species=c("recent", "neanderthal")),
+       interval="prediction", level=0.05)
+
+
+
+```
+
+
+#### k. (5pts) A friend of yours just got back from an archaeological dig in Europe and has uncovered a hominid skeleton with an estimated ln body mass of 4.33 and an estimated ln brain size of 7.5. She needs your statistical skills to help determine whether she has found a Neanderthal skeleton, a human skeleton, or if it is too close to call.
+
+Using the model you fit above, predict the expected ln brain size for humans and Neanderthals with an ln body mass of 4.33 as well as the uncertainty around these predictions using the predict() function.
+
+```{r}
+# Hint: to conduct predictions on NEW data, you will need to add something to the newdata argument in the predict() function. You can do so like this:
+
+#predict(YOUR_MODEL, 
+#        newdata = data.frame(lnmass = MASS_DATA_YOU_WANT_TO_USE_TO_PREDICT , species=c("recent", "neanderthal")),
+#        interval = CHOOSE_PREDICTION_OR_CONFIDENCE, level=PICK_A_LEVEL)
+
+predict(brain_model2,
+       newdata = data.frame(ln.mass = 4.33, species=c("recent", "neanderthal")),
+       interval="prediction", level=0.05)
+
+```
+
+#### l. (5pts) Based on these predictions from your model, do you think your friend found a human skeleton, a Neanderthal skeleton, or is it too close to call? Briefly explain your answer.
+
+Brain size is 7.5 which is **above** the upper prediction limit for a human brain size. Because the brain size is above the predicition interval for a neanderthal brain and a human brain we could probably safely say the brain is attributable to a human brain. 
+
+
+
+
+#### m. (5pts) Explain the difference between the use of interval="confidence" and interval="prediction". 
+
+The confidence interval gives the range of values for the **mean** Y given a certain value of X. <br /> 
+The prediction interval gives the range of values for a **single value** of Y given a certain value of X. <br /> 
+
+Because the prediction interval is giving the 95 percent confidence interval for a single value of Y the uncertainty tends to be larger. When you take the mean of many values they tend to converge on the actual mean, reducing the variability. 
+
+
+#### n. (8pts) Visualize the confidence and prediction bands by saving the output of the predict() function:
+
+```{r}
+# Uncomment the following code and fill in with your model name:
+
+  # preds_ci = as.data.frame(predict(YOUR_MODEL_HERE, interval="confidence"))
+  # names(preds_ci)=c("fit_ci","lwr_ci","upr_ci")
+  # 
+  # preds_pr = as.data.frame(predict(YOUR_MODEL_HERE, interval="prediction"))
+  # names(preds_pr)=c("fit_pr","lwr_pr","upr_pr")
+  # 
+  # NeanderthalBrains2 = cbind(NeanderthalBrains,preds_ci,preds_pr)
+
+preds_ci = as.data.frame(predict(brain_model2, interval="confidence"))
+names(preds_ci)=c("fit_ci","lwr_ci","upr_ci")
+
+preds_pr = as.data.frame(predict(brain_model2, interval="prediction"))
+names(preds_pr)=c("fit_pr","lwr_pr","upr_pr")
+
+NeanderthalBrains2 = cbind(NeanderthalBrains,preds_ci,preds_pr)
+
+
+# Now plot: Hint: Use geom_ribbon to create ribbons for the confidence and prediction intervals.
+ggplot(NeanderthalBrains2, aes(x=ln.mass, y=fit_ci))+
+  geom_point()+
+  geom_ribbon(aes(ymin=lwr_ci, ymax=upr_ci, fill=species, alpha=0.5))
+
+ggplot(NeanderthalBrains2, aes(x=ln.mass, y=fit_pr))+
+  geom_point(aes(fill=species))+
+  geom_ribbon(aes(ymin=lwr_pr, ymax=upr_pr, fill=species, alpha=0.5))
+```
+
+
+
+
+
+
+
+

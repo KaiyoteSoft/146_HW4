@@ -84,11 +84,8 @@ ggplot(plant, aes(x=log_num_leaves, y=dand_rosette_diam_cm))+
 
 ```{r}
 
-str(plant_filter)
 plant_filter <- plant[which(plant$dand_rosette_diam_cm>-1), ]
 plant_filter2 <- na.omit(plant, cols=dand_rosette_diam_cm)
-
-?na.omit
 
 cor(plant_filter$log_num_leaves, plant_filter$dand_rosette_diam_cm)
 
